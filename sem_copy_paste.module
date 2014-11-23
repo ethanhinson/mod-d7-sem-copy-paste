@@ -1,0 +1,52 @@
+<?php
+/**
+ * Implements hook_menu()
+ * @return array
+ */
+function sem_copy_paste_menu() {
+  $items = array();
+  // Admin screen
+  $items['admin/config/content/copy_paste'] = array(
+    'title' => t('SEM Friendly Copy/Paste'),
+    'description' => t('Configure content copying settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sem_copy_paste_form_config'),
+    'access arguments' => array('access administration menu'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'sem_copy_paste.admin.inc',
+);
+  return $items;
+}
+
+/**
+ * Implements hook_page_alter()
+ */
+function sem_copy_paste_page_alter(&$page) {
+  global $user;
+  $roles = variable_get('sem_cp_exempt_roles', array());
+  $exempt = array_intersect($user->roles, $roles);
+  $js_settings = array('sem_copy_paste' => array());
+  if (variable_get('sem_cp_track', FALSE) && !count($exempt) && module_exists('googleanalytics') && function_exists('googleanalytics_api')) {
+    $api = googleanalytics_api();
+    if($api['api'] == 'analytics.js') {
+      $js_settings['sem_copy_paste']['track'] = 1;
+    }
+  }
+
+  if (variable_get('sem_cp_append', TRUE) && !count($exempt)) {
+    global $base_url;
+    $attr_str = variable_get('sem_cp_attr_text', '');
+    $url = drupal_get_path_alias($base_url . '/' . current_path());
+    $link = l('Read More at ' . $url,  $url);
+    $js_settings['sem_copy_paste']['attribution']['append'] = 1;
+    $js_settings['sem_copy_paste']['attribution']['str'] = $attr_str . ' ' . $link;
+    drupal_alter('sem_copy_paste_attr_append', $attr_str, $page, $exempt);
+  }
+
+  if (!empty($js_settings['sem_copy_paste'])) {
+    drupal_add_js($js_settings, array('type' => 'setting'));
+    drupal_add_js(drupal_get_path('module', 'sem_copy_paste') . '/js/vendor/addtocopy.js');
+    drupal_add_js(drupal_get_path('module', 'sem_copy_paste') . '/js/sem_copy_paste.js');
+  }
+
+}

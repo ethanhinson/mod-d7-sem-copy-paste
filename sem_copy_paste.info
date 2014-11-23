@@ -1,0 +1,6 @@
+name = SEM Friendly Copy/Paste
+description = Tracks copy/paste behavior of users as well as appending attribution to copied content.
+core = 7.x
+package = Search
+version = 7.x-1.0
+project = sem_copy_paste
